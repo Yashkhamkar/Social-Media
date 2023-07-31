@@ -1,53 +1,70 @@
 import React, { useEffect, useState } from "react";
 import { Like, CommentOne } from "@icon-park/react";
-
 import "./style.css";
-import Posts from "../Posts/Posts";
-import styled from "styled-components";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate } from "react-router-dom";
-import { GetloggedinUserPosts } from "../../actions/User";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { useNavigate, useParams } from "react-router-dom";
+import { UpdateUserInfo } from "../../actions/User";
 import Swal from "sweetalert2";
-import { set } from "mongoose";
+import Posts from "../Posts/Posts";
+import { Dialog } from "@mui/material";
 
-const ProfilePage = () => {
+const UserProfilePage = () => {
   const [details, setdetails] = useState([]);
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [threedots, setthreedots] = useState(false);
-  const [openMenu, setOpenMenu] = useState(false);
-  const handlePostClick = (post) => {
-    setSelectedPost(post);
-    if (threedots == true) {
-      setpostDialog(false);
-    }
-    setpostDialog(true);
-    console.log(selectedPost);
-  };
+  const [followed, setfollowed] = useState(false);
+  const [postDialog, setpostDialog] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const params = useParams();
+  const { id } = params;
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
     if (!userInfo) {
       navigate("/");
     }
+
     getPosts();
   }, []);
-  const followingList = details.following ?? [];
-  const followersList = details.followers ?? [];
-
-  const getPosts = async () => {
-    const response = await fetch(`/user/myprofile`);
-    const data = await response.json();
-    setdetails(data.user);
-    dispatch(GetloggedinUserPosts(data.user));
+  const [selectedPost, setSelectedPost] = useState(null);
+  const handlePostClick = (post) => {
+    setSelectedPost(post);
+    setpostDialog(true);
+    console.log(selectedPost);
   };
+  const getPosts = async () => {
+    const followId = userInfo._id;
+    try {
+      const response = await fetch(`/user/${id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setdetails(data.user);
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [openFollowersDialog, setOpenFollowersDialog] = useState(false);
-  const [postDialog, setpostDialog] = useState(false);
+        if (data.user.followers.includes(followId)) {
+          setfollowed(true);
+        }
+      } else {
+        console.error("Error fetching user data.");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+  const followUnfollow = (id) => {
+    setfollowed(!followed);
+    fetch(`/user/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then(() => {
+      const updatedUserInfo = {
+        ...userInfo,
+        following: [...userInfo.following, id], // Assuming following is an array of user IDs
+      };
+      localStorage.setItem("userInfo", JSON.stringify(updatedUserInfo));
+      dispatch(UpdateUserInfo(updatedUserInfo));
+    });
+  };
   const numberOfPosts = details.posts ? details.posts.length : 0;
   const numberOfFollowers = details.followers ? details.followers.length : 0;
   const numberOfFollowing = details.following ? details.following.length : 0;
@@ -73,75 +90,24 @@ const ProfilePage = () => {
           photoURL={selectedPost?.owner?.avtar}
           caption={selectedPost?.caption}
           imageURL={selectedPost?.image}
-          postID={selectedPost?._id}
-          likes={selectedPost?.likes}
-          comments={selectedPost?.comments}
+          postID={selectedPost?.owner?._id}
         />
-      </Dialog>
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Followings</DialogTitle>
-        <DialogContent>
-          <AllCommentContainer>
-            {followingList.map((follows) => (
-              <div className="post-comment" key={follows._id}>
-                <div className="user-image">
-                  <img src={follows.avtar} alt="" />
-                </div>
-                <div className="user-comment">
-                  <strong>{follows.name}</strong>
-                </div>
-                <button
-                  button
-                  className="primary buttons"
-                  style={{ cursor: "pointer", marginLeft: "100px" }}
-                >
-                  Unfollow
-                </button>
-              </div>
-            ))}
-          </AllCommentContainer>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={openFollowersDialog}
-        onClose={() => setOpenFollowersDialog(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Followers</DialogTitle>
-        <DialogContent>
-          <AllCommentContainer>
-            {followersList.map((follower) => (
-              <div className="post-comment" key={follower._id}>
-                <div className="user-image">
-                  <img src={follower.avtar} alt="" />
-                </div>
-                <div className="user-comment">
-                  <strong>{follower.name}</strong>
-                </div>
-              </div>
-            ))}
-          </AllCommentContainer>
-        </DialogContent>
       </Dialog>
       <header>
         <div className="header-wrap">
           <div className="profile-pic">
-            <img src={userInfo.avtar} alt="profile-logo" />
+            <img src={details.avtar} alt="profile-logo" />
           </div>
           <div className="profile-info">
             <div className="title row">
-              <h2>{userInfo.name}</h2>
+              <h2>{details.name}</h2>
               <span className="verfied-icon spanx"></span>
-              <button className="primary buttons" style={{ cursor: "pointer" }}>
-                <Link to="/editprofile" style={{ color: "" }}>
-                  Edit Profile
-                </Link>
+              <button
+                className="buttons"
+                style={{ cursor: "pointer", color: "#c13584" }}
+                onClick={() => followUnfollow(details._id)}
+              >
+                {followed ? "Unfollow" : "Follow"}
               </button>
             </div>
             <div className="desktop-only">
@@ -150,16 +116,10 @@ const ProfilePage = () => {
                   <li style={{ listStyle: "none" }}>
                     <span className="spanx">{numberOfPosts}</span> posts
                   </li>
-                  <li
-                    style={{ listStyle: "none", cursor: "pointer" }}
-                    onClick={() => setOpenFollowersDialog(true)}
-                  >
+                  <li style={{ listStyle: "none" }}>
                     <span className="spanx">{numberOfFollowers}</span> followers
                   </li>
-                  <li
-                    style={{ listStyle: "none", cursor: "pointer" }}
-                    onClick={() => setOpenDialog(true)}
-                  >
+                  <li style={{ listStyle: "none" }}>
                     <span className="spanx">{numberOfFollowing}</span> following
                   </li>
                 </ul>
@@ -174,7 +134,14 @@ const ProfilePage = () => {
           </div>
         </div>
         <div className="profile-info mobile-only">
-          <div className="descriptions row"></div>
+          <div className="descriptions row">
+            <h1>apple</h1>
+            <span className="spanx">
+              Everyone has a story to tell.
+              <br />
+              Tag <a>#ShotoniPhone</a> to take part.
+            </span>
+          </div>
         </div>
       </header>
       <div className="desktop-only">
@@ -226,15 +193,11 @@ const ProfilePage = () => {
             <div>{numberOfPosts}</div>
             posts
           </li>
-          <li onClick={() => setOpenFollowersDialog(true)}>
+          <li>
             <div>{numberOfFollowers}</div>
             followers
           </li>
-          <li
-            onClick={() => {
-              setOpenDialog(true);
-            }}
-          >
+          <li>
             <div>{numberOfFollowing}</div>
             following
           </li>
@@ -261,12 +224,6 @@ const ProfilePage = () => {
             height="24"
             viewBox="0 0 48 48"
             width="24"
-            onClick={() => {
-              Swal.fire({
-                title: "Sorry this feature is not available yet.",
-                text: "We are working on it.",
-              });
-            }}
           >
             <path d="M41 10c-2.2-2.1-4.8-3.5-10.4-3.5h-3.3L30.5 3c.6-.6.5-1.6-.1-2.1-.6-.6-1.6-.5-2.1.1L24 5.6 19.7 1c-.6-.6-1.5-.6-2.1-.1-.6.6-.7 1.5-.1 2.1l3.2 3.5h-3.3C11.8 6.5 9.2 7.9 7 10c-2.1 2.2-3.5 4.8-3.5 10.4v13.1c0 5.7 1.4 8.3 3.5 10.5 2.2 2.1 4.8 3.5 10.4 3.5h13.1c5.7 0 8.3-1.4 10.5-3.5 2.1-2.2 3.5-4.8 3.5-10.4V20.5c0-5.7-1.4-8.3-3.5-10.5zm.5 23.6c0 5.2-1.3 7-2.6 8.3-1.4 1.3-3.2 2.6-8.4 2.6H17.4c-5.2 0-7-1.3-8.3-2.6-1.3-1.4-2.6-3.2-2.6-8.4v-13c0-5.2 1.3-7 2.6-8.3 1.4-1.3 3.2-2.6 8.4-2.6h13.1c5.2 0 7 1.3 8.3 2.6 1.3 1.4 2.6 3.2 2.6 8.4v13zM34.6 25l-9.1 2.8v-3.7c0-.5-.2-.9-.6-1.2-.4-.3-.9-.4-1.3-.2l-11.1 3.4c-.8.2-1.2 1.1-1 1.9.2.8 1.1 1.2 1.9 1l9.1-2.8v3.7c0 .5.2.9.6 1.2.3.2.6.3.9.3.1 0 .3 0 .4-.1l11.1-3.4c.8-.2 1.2-1.1 1-1.9s-1.1-1.2-1.9-1z"></path>
           </svg>
@@ -285,36 +242,6 @@ const ProfilePage = () => {
               <img alt="gallery-post" src={post.image} />
               <div className="overlay">
                 <div className="iconss">
-                  <div className="three-dots-icon">
-                    <i
-                      class="fa-solid fa-ellipsis-vertical fa-xl"
-                      style={{ color: "white" }}
-                      fontSize="24px"
-                      onClick={() => {
-                        setthreedots(true);
-                        Swal.fire({
-                          showDenyButton: true,
-                          confirmButtonText: "Edit post",
-                          denyButtonText: `Delete post`,
-                        }).then((result) => {
-                          if (result.isConfirmed) {
-                            navigate(`/editpost/${post._id}`);
-                          } else if (result.isDenied) {
-                            fetch(`post/${post._id}`, {
-                              method: "DELETE",
-                            }).then((res) => {
-                              Swal.fire(
-                                "Post deleted successfully",
-                                "",
-                                "success"
-                              );
-                              window.location.reload();
-                            });
-                          }
-                        });
-                      }}
-                    ></i>
-                  </div>
                   <Like
                     theme="filled"
                     size="24"
@@ -341,52 +268,5 @@ const ProfilePage = () => {
     </main>
   );
 };
-const AllCommentContainer = styled.div`
-  padding: 15px;
 
-  .post-comment {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-
-    .user-image {
-      margin-right: 20px;
-      img {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-      }
-    }
-
-    .user-comment {
-      display: flex;
-
-      font-size: 13px;
-
-      strong {
-        margin-right: 10px;
-      }
-    }
-  }
-`;
-const Menu = styled.div`
-  position: relative;
-  bottom: -8px;
-  display: ${(props) => (props.openMenu ? "block" : "none")};
-  background: #fff;
-  width: 100px;
-  border: 1px solid lightgray;
-  border-radius: 5px;
-`;
-
-const MenuElement = styled.div`
-  height: 40px;
-  color: gray;
-  border-bottom: 1px solid lightgray;
-  padding: 10px;
-  &:hover {
-    background-color: #e4e4e4;
-  }
-`;
-
-export default ProfilePage;
+export default UserProfilePage;

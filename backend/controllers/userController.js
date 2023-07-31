@@ -5,8 +5,12 @@ const Post = require("../models/postModel");
 
 const register = async (req, res) => {
   const userExists = await User.findOne({ email: req.body.email });
+  const usernameExists = await User.findOne({ name: req.body.name });
   if (userExists) {
     return res.status(409).send({ message: "User already exists" });
+  }
+  if (usernameExists) {
+    return res.status(408).send({ message: "Username already exists" });
   }
   try {
     const otp = await generateOtp();
@@ -97,14 +101,27 @@ const updatePassword = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    const { email, name } = req.body;
-    if (email) {
+    const { email, name, avtar } = req.body;
+    console.log(req.body.email, req.body.name, req.body.avtar);
+    const checkmail = await User.find({ email: email });
+    const checkname = await User.find({ name: name });
+    if (email && email.length > 0) {
+      if (!checkmail) {
+        return res.status(409).json({ message: "Email already exists" });
+      }
       user.email = email;
     }
-    if (name) {
+    if (name && name.length > 0) {
+      if (!checkname) {
+        return res.status(408).json({ message: "Username already exists" });
+      }
       user.name = name;
     }
+    if (avtar && avtar.length > 0) {
+      user.avtar = avtar;
+    }
     user.save();
+    const other = user._doc;
     const token = await user.generateToken();
     const options = {
       expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
@@ -113,7 +130,7 @@ const updateProfile = async (req, res) => {
     res
       .status(200)
       .cookie("token", token, options)
-      .json({ message: "Profile updated" });
+      .json({ message: "Profile updated", other });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -126,9 +143,28 @@ const getallUsers = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+const searchUsers = async (req, res) => {
+  try {
+    const users = await User.find({
+      name: { $regex: req.query.name, $options: "i" },
+    });
+    return res.status(200).json({ users });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate("posts");
+    const user = await User.findById(req.user._id)
+      .populate({
+        path: "posts",
+        populate: {
+          path: "owner",
+          select: "name avtar", // Select only the name and avtar fields of the owner
+        },
+      })
+      .populate("followers", "name avtar") // Populate followers with name, email, and avtar fields
+      .populate("following", "name avtar"); // Populate following with name, email, and avtar fields
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -139,7 +175,16 @@ const getProfile = async (req, res) => {
 };
 const getOtherProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate("posts");
+    const user = await User.findById(req.params.id).populate({
+      path: "posts",
+      populate: {
+        path: "owner",
+        select: "name avtar", // Select only the name and avtar fields of the owner
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     return res.status(200).json({ user });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -211,6 +256,7 @@ const followunfollowUser = async (req, res) => {
       usertoFollow.followers.pull(logginUser._id);
       await logginUser.save();
       await usertoFollow.save();
+      console.log("unfollowed");
       return res.status(200).json({ message: "User unfollowed" });
     }
 
@@ -218,6 +264,7 @@ const followunfollowUser = async (req, res) => {
     usertoFollow.followers.push(logginUser._id);
     await logginUser.save();
     await usertoFollow.save();
+    console.log("followed");
     return res.status(200).json({ message: "User followed" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -299,5 +346,6 @@ module.exports = {
   deleteProfile,
   forgotPassword,
   resetpassword,
+  searchUsers,
   enable2fa,
 };

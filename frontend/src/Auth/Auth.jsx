@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./auth.css";
 import Swal from "sweetalert2";
 import validator from "validator";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { Login } from "../actions/User";
+import { Login, Register } from "../actions/User";
+import { AiFillGithub } from "react-icons/ai";
+import logo from "../assets/logo.png";
 const Auth = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -20,6 +22,12 @@ const Auth = () => {
   const flip = () => {
     setlogin(!login);
   };
+  useEffect(() => {
+    if (localStorage.getItem("userInfo")) {
+      navigate("/home");
+    }
+  }, []);
+
   const validEmail = (e) => {
     setemail(e.target.value);
     setValid(validator.isEmail(e.target.value));
@@ -73,8 +81,16 @@ const Auth = () => {
       .then((res) => {
         if (res.status === 200) {
           return res.json();
+        } else if (res.status === 408) {
+          return Swal.fire({
+            icon: "warning",
+            text: "Username already taken. Please try another one.",
+          });
         } else {
-          throw new Error("User Already Exists");
+          return Swal.fire({
+            icon: "Warning",
+            text: "User with same email already exists. Please try another one.",
+          });
         }
       })
       .then((data) => {
@@ -121,21 +137,24 @@ const Auth = () => {
         if (res.status === 200) {
           res.json().then((data) => {
             const { other } = data;
-            localStorage.setItem("userInfo", JSON.stringify(other));
-            dispatch(Login(other));
+
             if (other.twoFa) {
               navigate(`/verify/${other._id}`);
               Swal.fire({
                 icon: "success",
                 text: "Otp sent for user login",
               });
+            } else {
+              localStorage.setItem("userInfo", JSON.stringify(other));
+              dispatch(Login(other));
+              Swal.fire({
+                icon: "success",
+                text: "User Logged In Successfully",
+              });
+              navigate("/home");
+              window.location.reload();
             }
           });
-          Swal.fire({
-            icon: "success",
-            text: "User Logged In Successfully",
-          });
-          navigate("/home");
         } else if (res.status === 401) {
           return Swal.fire({
             icon: "error",
@@ -258,7 +277,15 @@ const Auth = () => {
           <div className="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center">
             <h1>
               <a href="" rel="">
-                <Link to="/">YKONNECT</Link>
+                <Link to="/">
+                  <img
+                    src={logo}
+                    alt=""
+                    srcset=""
+                    height={45}
+                    style={{ marginBottom: "-25px" }}
+                  />
+                </Link>
               </a>
             </h1>
           </div>
@@ -387,14 +414,23 @@ const Auth = () => {
               </span>
 
               <div className="listing padding-top--24 padding-bottom--24 flex-flex center-center">
-                <span className="footer-span">
-                  <a href="#">© YKONNECT</a>
-                </span>
-                <span className="footer-span">
-                  <a href="#">Contact</a>
-                </span>
-                <span className="footer-span">
-                  <a href="#">Privacy & terms</a>
+                <span
+                  style={{ display: "inline-flex", alignItems: "center" }}
+                  className="footer-span"
+                >
+                  <a
+                    href="https://github.com/Yashkhamkar"
+                    target="_blank"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <AiFillGithub size={24} />
+                    <span style={{ marginLeft: "5px" }}>
+                      Made by Yashkhamkar
+                    </span>
+                  </a>
                 </span>
               </div>
             </div>

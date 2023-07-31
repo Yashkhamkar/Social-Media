@@ -45,6 +45,14 @@ nav .fixed {
   z-index: 1;
 }
 
+.three-dots-icon {
+  position: absolute;
+  bottom: 100px;
+  right: -70px;
+  z-index: 1;
+  cursor: pointer;
+}
+
 /* Profile */
 header {
   margin-bottom: 44px;
@@ -90,7 +98,7 @@ header {
   }
 }
 .overlay {
-  /* background-color: rgb(0, 0, 0); */
+  background-color: rgb(0, 0, 0);
   position: absolute;
   top: 0;
   display: flex;
@@ -316,7 +324,7 @@ header {
   }
 }
 .gallery-item:hover .overlay {
-  opacity: 1;
+  opacity: 0.7;
 }
 .gallery-item {
   position: relative;

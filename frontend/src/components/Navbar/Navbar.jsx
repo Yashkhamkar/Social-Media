@@ -7,13 +7,17 @@ import gallery from "../Create_post/icons/gallery.svg";
 import home from "../../assets/41-home.svg";
 import { MdOutlineExplore, MdLibraryAdd } from "react-icons/md";
 import "../Create_post/style.css";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import { LogoutUser } from "../../actions/User";
 function Navbar() {
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;
+  const dispatch = useDispatch();
   const [selectedFile, setSelectedFile] = useState(null);
+  const [results, setresults] = useState([]);
   const [caption, setCaption] = useState("");
+  const [search, setsearch] = useState();
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -22,14 +26,27 @@ function Navbar() {
       setSelectedFile(null);
     }
   };
-
+  const handleSearch = async (value) => {
+    setsearch(value);
+    const response = await fetch(`/user/search?name=${value}`);
+    const data = await response.json();
+    setresults(data.users);
+  };
+  const Logout = () => {
+    dispatch(LogoutUser());
+    navigate("/");
+  };
   const handleClickGallery = () => {
     document.getElementById("imageInput").click();
   };
   const createPost = (e) => {
     setOpenDialog(false);
     e.preventDefault();
-    let avtar;
+    Swal.fire({
+      icon: "success",
+      text: "Post created successfully",
+    });
+    let Postimage;
     if (!selectedFile) {
       return alert("Please select a file");
     }
@@ -44,7 +61,7 @@ function Navbar() {
     })
       .then((res) => res.json())
       .then((data) => {
-        avtar = data.secure_url;
+        Postimage = data.secure_url;
 
         return fetch(`/post/`, {
           method: "POST",
@@ -52,26 +69,23 @@ function Navbar() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            image: avtar,
+            image: Postimage,
             caption: caption,
           }),
         });
-      })
-      .then((res) => {
-        if (res.status === 201) {
-          setCaption("");
-          setSelectedFile(null);
-          Swal.fire({
-            icon: "success",
-            text: "Post created successfully",
-          });
-        }
       });
+    setCaption("");
+    setSelectedFile(null);
   };
   const [openMenu, setOpenMenu] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const navigate = useNavigate();
-  const logOut = (e) => {};
+  const navigateToUserProfile = (userId) => {
+    setsearch("");
+    setresults([]);
+    navigate(`/userprofile/${userId}`);
+    window.location.reload();
+  };
 
   return (
     <Container>
@@ -84,15 +98,17 @@ function Navbar() {
         <div className="post-body">
           <div className="container">
             <div className="wrapper">
-              <section className="post">
+              <section className="postx">
                 <header className="heads">Create Post</header>
                 <form action="#">
                   <div className="content">
-                    <img
-                      src={userInfo.avtar}
-                      alt="logo"
-                      style={{ borderRadius: "50%" }}
-                    />
+                    {userInfo ? (
+                      <img
+                        src={userInfo.avtar}
+                        alt="Avatar"
+                        style={{ borderRadius: "50%" }}
+                      />
+                    ) : null}
                     <div className="details">
                       <p>{userInfo.name}</p>
                     </div>
@@ -141,6 +157,26 @@ function Navbar() {
           <img src={logo} alt="" height={45} />
         </Link>
       </Logo>
+      {results.length > 0 && search && (
+        <UserBox>
+          {results.map((user) => (
+            <div
+              key={user._id}
+              onClick={() => navigateToUserProfile(user._id)} // Use custom function for navigation
+            >
+              <UserItem>
+                {user.avtar && <Avatar src={user.avtar} alt={user.name} />}
+                <UserName>{user.name}</UserName>
+              </UserItem>
+            </div>
+          ))}
+        </UserBox>
+      )}
+      {results.length === 0 && search && (
+        <UserBox>
+          <NoUserFound>No user found</NoUserFound>
+        </UserBox>
+      )}
       <SearchBar>
         <input
           type="text"
@@ -148,6 +184,10 @@ function Navbar() {
           style={{
             marginTop: "15px",
             // textAlign: "center",
+          }}
+          value={search}
+          onChange={(e) => {
+            handleSearch(e.target.value);
           }}
         />
       </SearchBar>
@@ -169,26 +209,71 @@ function Navbar() {
           />
         </Icon>
         <Icon>
-          <MdOutlineExplore style={{ fontSize: "24px" }} />
+          <Link to="/explore">
+            <MdOutlineExplore style={{ fontSize: "24px" }} />
+          </Link>
         </Icon>
         <Icon>
-          <img
-            src={userInfo.avtar}
-            alt=""
-            onClick={() => setOpenMenu(!openMenu)}
-          />
+          {userInfo ? (
+            <Icon>
+              <img
+                src={userInfo.avtar}
+                alt=""
+                onClick={() => setOpenMenu(!openMenu)}
+              />
+              <Menu openMenu={openMenu}>
+                <MenuElement onClick={() => navigate("/profile")}>
+                  Profile
+                </MenuElement>
+                <MenuElement onClick={Logout}>Logout</MenuElement>
+              </Menu>
+            </Icon>
+          ) : null}
           <Menu openMenu={openMenu}>
             <MenuElement onClick={() => navigate("/profile")}>
               Profile
             </MenuElement>
-            <MenuElement onClick={logOut}>Logout</MenuElement>
+            <MenuElement onClick={Logout}>Logout</MenuElement>
           </Menu>
         </Icon>
       </Icons>
     </Container>
   );
 }
+const UserBox = styled.div`
+  position: absolute;
+  margin-left: 550px;
+  top: 50px;
+  left: 0;
+  width: 268px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+`;
+const NoUserFound = styled.div`
+  padding: 8px 16px;
+  font-size: 14px;
+  text-align: center;
+`;
 
+const UserItem = styled.div`
+  padding: 8px 16px;
+  display: flex;
+  cursor: pointer;
+  &:hover {
+    background-color: #f1f1f1;
+  }
+`;
+const Avatar = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 10px;
+`;
+
+const UserName = styled.span`
+  font-size: 14px;
+`;
 const Container = styled.div`
   height: 60px;
   padding-top: 5px;

@@ -2,6 +2,8 @@ import React, { useRef, useState } from "react";
 import "./auth.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import logo from "../assets/logo.png";
+
 
 const ResetPassword = () => {
   const inputRefs = useRef([]);
@@ -178,7 +180,15 @@ const ResetPassword = () => {
           <div className="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center">
             <h1>
               <a href="" rel="">
-                <Link to="/">YKONNECT</Link>
+              <Link to="/">
+                  <img
+                    src={logo}
+                    alt=""
+                    srcset=""
+                    height={45}
+                    style={{ marginBottom: "-25px" }}
+                  />
+                </Link>
               </a>
             </h1>
           </div>

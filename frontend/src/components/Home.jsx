@@ -1,62 +1,81 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import Posts from "./Posts/Posts";
-import Navbar from "./Navbar/Navbar";
+import { useNavigate } from "react-router-dom";
+import Suggestion from "./Suggestion/Suggestion";
+import { AiFillGithub } from "react-icons/ai";
 const Home = () => {
-  const allPost = [
-    {
-      id: 1,
-      name: "Vincent van Gogh",
-      username: "vincey1853",
-      location: "Zundert, Netherlands",
-      avatar: "https://bit.ly/3shJrDh",
-      post: "https://bit.ly/3TubxHq",
-      comment: "just took a few mushrooms lol",
-      likes: 21,
-    },
-    {
-      id: 2,
-      name: "Gustave Courbet",
-      username: "gus1819",
-      location: "Ornans, France",
-      avatar: "https://bit.ly/3VKv4VH",
-      post: "https://bit.ly/3DkW1rB",
-      comment: "i'm feelin a bit stressed tbh",
-      likes: 4,
-    },
-    {
-      id: 3,
-      name: "Joseph Ducreux",
-      username: "jd1735",
-      location: "Paris, France",
-      avatar: "https://bit.ly/3CYdGUB",
-      post: "https://bit.ly/3W2pTk6",
-      comment:
-        "gm friends! which coin are YOU stacking up today?? post below and WAGMI!",
-      likes: 152,
-    },
-  ];
+  const [details, setdetails] = useState([]);
+
+  const navigate = useNavigate();
+  useEffect(() => {
+    const userInfo = localStorage.getItem("userInfo");
+    if (!userInfo) {
+      navigate("/");
+    }
+    getPosts();
+  }, [details]);
+  const getPosts = async () => {
+    const response = await fetch(`/post/posts`);
+    const data = await response.json();
+    setdetails(data.posts);
+  };
   return (
     <Container>
-      {/* <Sidebar /> */}
       <Inner>
         <Main>
           <PostContainer>
-            {allPost.map((post) => (
-              <Posts
-                userName={post.username}
-                photoURL={post.avatar}
-                caption={post.comment}
-                imageURL={post.post}
-                postID={post.id}
-              />
-            ))}
+            {details.length > 0 &&
+              details.map(
+                (post) => (
+                  <Posts
+                    userName={post.owner.name}
+                    photoURL={post.owner.avtar}
+                    caption={post.caption}
+                    imageURL={post.image}
+                    userID={post.owner._id}
+                    postID={post._id}
+                    likes={post.likes}
+                    comments={post.comments}
+                  />
+                )
+                // console.log(post.caption)
+              )}
           </PostContainer>
         </Main>
       </Inner>
+      <StickySuggestion>
+        <Suggestion />
+      </StickySuggestion>
+      <a
+        href="https://github.com/Yashkhamkar"
+        target="_blank"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          marginLeft: "20px",
+          marginTop: "20px",
+        }}
+      >
+        <AiFillGithub size={24} />
+        <span style={{ marginLeft: "5px" }}>Made by Yashkhamkar</span>
+      </a>
     </Container>
   );
 };
+const StickySuggestion = styled.div`
+  position: sticky;
+  top: 60px; /* Adjust this value as needed to fit your layout */
+`;
+const GitHubLink = styled.a`
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  text-decoration: none;
+  color: #333;
+`;
 const Container = styled.div``;
 
 const Inner = styled.div`

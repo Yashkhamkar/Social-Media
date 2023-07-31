@@ -9,12 +9,25 @@ import { MdOutlineExplore, MdLibraryAdd } from "react-icons/md";
 import DialogContent from "@mui/material/DialogContent";
 
 import DialogTitle from "@mui/material/DialogTitle";
-function Posts({ userName, photoURL, caption, imageURL, postID }) {
+import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
+function Posts({
+  userName,
+  photoURL,
+  caption,
+  imageURL,
+  userID,
+  postID,
+  likes,
+  comments,
+}) {
+  const [likeActive, setLikeActive] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [likeState, setLikeState] = useState({ likeActive: false });
   const [moreButton, setMoreButton] = useState(false);
   const [commentInput, setCommentInput] = useState("");
-  const [likesOnPost, setLikesOnPost] = useState({ likes: [] });
+  const [likesOnPost, setLikesOnPost] = useState();
 
   const commentsOnPost = [
     {
@@ -36,64 +49,83 @@ function Posts({ userName, photoURL, caption, imageURL, postID }) {
       commentInput: "I love it!",
     },
   ];
-
+  const userLogin = useSelector((state) => state.userLogin);
+  const { userInfo } = userLogin;
   const handleLike = () => {
-    setLikeState((prevState) => ({ likeActive: !prevState.likeActive }));
+    fetch(`/post/${postID}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
   };
-
+  const idToCheck = userInfo._id;
+  const isLiked = likes?.some((like) => like._id === idToCheck);
   const handleComment = () => {
-    // Handle posting a comment
+    fetch(`/post/${postID}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ comment: commentInput }),
+    }).then((res) => {
+      Swal.fire({
+        icon: "success",
+        title: "Comment Added",
+      });
+    });
+    setCommentInput("");
   };
   return (
     <Container>
       <Dialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>Comments</DialogTitle>
         <DialogContent>
           <AllCommentContainer>
-            {commentsOnPost.map((comment) => (
-              <div className="post-comment">
+            {comments.map((comment) => (
+              <div className="post-comment" key={comment._id}>
                 <div className="user-image">
-                  <img src={comment.photoURL} alt="" />
+                  <img src={comment.user.avtar} alt={comment.user.name} />
                 </div>
                 <div className="user-comment">
-                  <strong>{comment?.userName}</strong>
-                  <p>{comment?.commentInput}</p>
+                  <strong>{comment.user.name}</strong>
+                  <p>{comment.comment}</p>
                 </div>
               </div>
             ))}
           </AllCommentContainer>
         </DialogContent>
       </Dialog>
-      <UserInfo>
-        <img src={photoURL} alt="" />
-        <p>{userName}</p>
-      </UserInfo>
+      <Link to={`/userprofile/${userID}`}>
+        <UserInfo>
+          <img src={photoURL} alt="" />
+          <p>{userName}</p>
+        </UserInfo>
+      </Link>
       <Content>
         <img src={imageURL} alt="" />
       </Content>
       <PostCTA>
         <CTAButtons>
-          {likeState.likeActive ? (
-            <img src={heart_1} alt="" onClick={handleLike} />
-          ) : (
+          {isLiked ? (
             <img src={heart} alt="" onClick={handleLike} />
+          ) : (
+            <img src={heart_1} alt="" onClick={handleLike} />
           )}
           <img src={comment} alt="" onClick={() => setOpenDialog(true)} />
         </CTAButtons>
-        <LikeCount>
-          <p>{likesOnPost?.likes.length} likes</p>
-        </LikeCount>
+        <LikeCount>{<p>{likes?.length} likes</p>}</LikeCount>
         <PostDescription moreButton={moreButton}>
           <h5>{caption}</h5>
 
           <div className="recent-comment">
-            <strong>{commentsOnPost[0]?.userName}</strong>
-            <p>{commentsOnPost[0]?.commentInput}</p>
+            <strong>{comments[comments.length - 1]?.user.name}</strong>
+            <p>{comments[comments.length - 1]?.comment}</p>
           </div>
 
           <div className="description-buttons">
@@ -110,7 +142,9 @@ function Posts({ userName, photoURL, caption, imageURL, postID }) {
             onChange={(e) => setCommentInput(e.target.value)}
             value={commentInput}
           />
-          <button onClick={handleComment}>Post</button>
+          <button onClick={handleComment} style={{ cursor: "pointer" }}>
+            Post
+          </button>
         </CommentInput>
       </PostCTA>
     </Container>
@@ -130,6 +164,7 @@ const UserInfo = styled.div`
   padding: 5px 10px;
   display: flex;
   align-items: center;
+  cursor: pointer;
 
   border-bottom: 1px solid lightgray;
 
@@ -138,6 +173,7 @@ const UserInfo = styled.div`
     height: 38px;
     border-radius: 100%;
     margin-left: 10px;
+
     border: 1px solid lightgray;
   }
 

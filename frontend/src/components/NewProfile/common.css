@@ -17,14 +17,14 @@ main {
   all: unset;
   font-weight: 600;
   font-size: 14px;
-  color: #0095f6;
-  -webkit-text-fill-color: #0095f6;
+  color: #c13584;
+  -webkit-text-fill-color: #c13584;
   line-height: 18px;
   padding: 5px 9px;
   border-radius: 4px;
 }
 .buttons .primary {
-  background: #0095f6;
+  background: #c13584;
   color: white;
   -webkit-text-fill-color: white;
 }

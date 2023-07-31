@@ -6,18 +6,18 @@
   box-sizing: border-box;
   font-family: "Poppins", sans-serif;
 }
-.post-body {
+.postx-body {
   display: flex;
   justify-content: center;
   /* min-height: 100vh; */
 }
 ::selection {
   color: #fff;
-  background: #1a81ff;
+  background: #c13584;
 }
 .container {
   width: 500px;
-  height: 380px;
+  height: 430px;
   overflow: hidden;
   background: #fff;
   border-radius: 10px;
@@ -38,10 +38,10 @@
 .container img {
   cursor: pointer;
 }
-.container .post {
+.container .postx {
   transition: margin-left 0.18s ease;
 }
-.container.active .post {
+.container.active .postx {
   margin-left: -500px;
 }
 .heads {
@@ -51,23 +51,23 @@
   text-align: center;
   border-bottom: 1px solid #bfbfbf;
 }
-.post form {
+.postx form {
   margin: 20px 25px;
 }
-.post {
+.postx {
   padding-right: 1px;
 }
-.post form .content,
+.postx form .content,
 .audience .list li .column {
   display: flex;
   align-items: center;
 }
 
-.post form .content img {
+.postx form .content img {
   cursor: default;
   max-width: 52px;
 }
-.post form .content .details {
+.postx form .content .details {
   margin: -3px 0 0 12px;
 }
 form .content .details p {
@@ -168,10 +168,10 @@ form button {
 form textarea:valid ~ button {
   color: #fff;
   cursor: pointer;
-  background: #4599ff;
+  background: #c13584;
 }
 form textarea:valid ~ button:hover {
-  background: #1a81ff;
+  background: #c13584;
 }
 .container .audience {
   opacity: 0;
@@ -255,7 +255,7 @@ form textarea:valid ~ button:hover {
   border: 1px solid #707070;
 }
 .list li.active .radio {
-  border: 2px solid #4599ff;
+  border: 2px solid #c13584;
 }
 .list li .radio::before {
   content: "";
@@ -264,5 +264,5 @@ form textarea:valid ~ button:hover {
   border-radius: inherit;
 }
 .list li.active .radio::before {
-  background: #4599ff;
+  background: #c13584;
 }

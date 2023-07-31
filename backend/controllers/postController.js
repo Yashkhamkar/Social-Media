@@ -22,11 +22,15 @@ const likeunlike = async (req, res) => {
     if (liked) {
       post.likes.pull(req.user._id);
       await post.save();
-      return res.status(200).json({ message: "Post unliked" });
+      const totalLikes = post.likes.length;
+      console.log(totalLikes);
+      return res.status(200).json({ totalLikes });
     } else {
       post.likes.push(req.user._id);
       await post.save();
-      return res.status(200).json({ message: "Post liked" });
+      const totalLikes = post.likes.length;
+      console.log(totalLikes);
+      return res.status(200).json({ totalLikes });
     }
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -34,6 +38,7 @@ const likeunlike = async (req, res) => {
 };
 const deletePost = async (req, res) => {
   try {
+    console.log(req.params.id);
     const post = await Post.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
@@ -52,37 +57,74 @@ const deletePost = async (req, res) => {
 const getPostsOfFollowing = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    const posts = await Post.find({ owner: { $in: user.following } });
-    res.status(200).json({ posts });
+    const posts = await Post.find({ owner: { $in: user.following } })
+      .populate("owner", "name avtar") // Populate the 'owner' field with 'name' and 'avatar'
+      .populate("comments.user", "name avtar") // Populate the 'comments.user' field with 'name' and 'avatar'
+      .exec();
+
+    const formattedPosts = posts.map((post) => {
+      return {
+        _id: post._id,
+        caption: post.caption,
+        image: post.image,
+        owner: {
+          _id: post.owner._id,
+          name: post.owner.name,
+          avtar: post.owner.avtar,
+        },
+        createdAt: post.createdAt,
+        likes: post.likes,
+        comments: post.comments,
+        __v: post.__v,
+      };
+    });
+
+    res.status(200).json({ posts: formattedPosts });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
+
 const addComment = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
-    let commentIndex = -1;
-    post.comments.forEach((item, index) => {
-      if (item.user.toString() === req.user._id.toString()) {
-        commentIndex = index;
-      }
+
+    await post.comments.push({
+      user: req.user._id,
+      comment: req.body.comment,
     });
-    console.log(post.comments);
-    if (commentIndex !== -1) {
-      post.comments[commentIndex].comment = req.body.comment;
-      await post.save();
-      return res.status(200).json({ message: "Comment updated" });
-    } else {
-      await post.comments.push({
-        user: req.user._id,
-        comment: req.body.comment,
-      });
-      await post.save();
-      return res.status(200).json({ message: "Comment added" });
-    }
+    await post.save();
+    return res.status(200).json({ message: "Comment added" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+const getallPosts = async (req, res) => {
+  try {
+    const posts = await Post.find({})
+      .populate("owner", "name avtar")
+      .populate("comments.user", "name avtar");
+    const formattedPosts = posts.map((post) => {
+      return {
+        _id: post._id,
+        caption: post.caption,
+        image: post.image,
+        owner: {
+          _id: post.owner._id,
+          name: post.owner.name,
+          avtar: post.owner.avtar,
+        },
+        createdAt: post.createdAt,
+        likes: post.likes,
+        comments: post.comments,
+        __v: post.__v,
+      };
+    });
+
+    res.status(200).json({ posts: formattedPosts });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -114,10 +156,32 @@ const deleteComment = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+const editPost = async (req, res) => {
+  try {
+    console.log(req.body);
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    if (post.owner.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: "You are not authorized" });
+    }
+    if (req.body.caption) {
+      post.caption = req.body.caption;
+    }
+    await post.save();
+    return res.status(200).json({ message: "Post updated" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 module.exports = {
   createPost,
   likeunlike,
   deletePost,
   getPostsOfFollowing,
   addComment,
+  deleteComment,
+  getallPosts,
+  editPost,
 };

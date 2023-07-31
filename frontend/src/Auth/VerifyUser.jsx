@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import "./auth.css";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
+import logo from "../assets/logo.png";
 
 const VerifyUser = () => {
   const inputRefs = useRef([]);
@@ -57,6 +58,7 @@ const VerifyUser = () => {
       if (res.status === 200) {
         res.json().then((data) => {
           const { other } = data;
+          localStorage.setItem("userInfo", JSON.stringify(other));
           if (!other.twoFa) {
             Swal.fire({
               icon: "success",
@@ -79,12 +81,18 @@ const VerifyUser = () => {
                       icon: "success",
                       text: "2FA has been enableld successfully",
                     });
+                    navigate("/home");
+                    window.location.reload();
                   }
                 });
               }
+              navigate("/home");
+              window.location.reload();
             });
+          } else {
+            navigate("/home");
+            window.location.reload();
           }
-          navigate("/home");
         });
       } else {
         return Swal.fire({
@@ -196,7 +204,15 @@ const VerifyUser = () => {
           <div className="box-root padding-top--48 padding-bottom--24 flex-flex flex-justifyContent--center">
             <h1>
               <a href="" rel="">
-                <Link to="/">YKONNECT</Link>
+                <Link to="/">
+                  <img
+                    src={logo}
+                    alt=""
+                    srcset=""
+                    height={45}
+                    style={{ marginBottom: "-25px" }}
+                  />
+                </Link>
               </a>
             </h1>
           </div>
