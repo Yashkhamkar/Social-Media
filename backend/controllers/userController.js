@@ -19,6 +19,7 @@ const register = async (req, res) => {
       ...req.body,
       otp: otp,
     });
+    newUser.following.push("64c8d3b76409babe46b27969");
     newUser.save();
     const id = newUser._id;
     return res
