@@ -3,13 +3,7 @@ import "./editprofile.css";
 import { useDispatch, useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { Login, UpdateUserInfo } from "../../actions/User";
-import { set } from "mongoose";
-//@TODO
-//like unlike
-//comment
-//Single post in profile page
-//explore page
-//search
+
 const EditProfile = () => {
   const userLogin = useSelector((state) => state.userLogin);
   const { userInfo } = userLogin;

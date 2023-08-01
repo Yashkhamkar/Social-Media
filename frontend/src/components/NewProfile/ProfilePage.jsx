@@ -9,7 +9,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { GetloggedinUserPosts } from "../../actions/User";
 import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 import Swal from "sweetalert2";
-import { set } from "mongoose";
 
 const ProfilePage = () => {
   const [details, setdetails] = useState([]);
